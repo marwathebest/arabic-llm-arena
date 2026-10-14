@@ -1,0 +1,4 @@
+# Copy to .dev.vars for local development. Leave a key empty to run that side in demo mode.
+HUMAIN_API_KEY=
+HUMAIN_BASE_URL=
+OPENAI_API_KEY=

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Arabic LLM Arena</title>
+<meta name="description" content="Blind side-by-side arena comparing HUMAIN (ALLaM) and OpenAI on Arabic and Saudi-dialect prompts, with an Elo leaderboard, latency and cost metrics, and an AI judge." />
+<meta name="author" content="Marwah Abdullah Sabei" />
+<script>
+  // Theme and language before paint, same approach as the portfolio.
+  (function () {
+    var d = document.documentElement, t = null, l = null;
+    try { t = localStorage.getItem('arena-theme'); l = localStorage.getItem('arena-lang'); } catch (e) {}
+    if (!t) t = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    d.setAttribute('data-theme', t);
+    if (l === 'en') { d.lang = 'en'; d.dir = 'ltr'; }
+  })();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232563eb'/%3E%3Cpath d='M9 22V10m14 12V10M9 16h5m4 0h5' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E" />
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand keep" href="#top"><b>arena</b>@<i>riyadh</i>:~$<span class="caret" aria-hidden="true"></span></a>
+    <nav class="links">
+      <a href="#play" data-i18n="nav.play"></a>
+      <a href="#board" data-i18n="nav.board"></a>
+      <a href="#how" data-i18n="nav.how"></a>
+    </nav>
+    <button class="chip" id="langBtn" type="button" aria-label="Switch language">EN</button>
+    <button class="chip" id="themeBtn" type="button" aria-label="Toggle theme">◐</button>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero wrap">
+    <p class="mono kicker" data-i18n="hero.kicker"></p>
+    <h1 data-i18n="hero.title"></h1>
+    <p class="lede" data-i18n="hero.lede"></p>
+    <div class="stats" id="heroStats" aria-live="polite">
+      <div><strong id="statRounds">—</strong><span data-i18n="stats.rounds"></span></div>
+      <div><strong id="statVotes">—</strong><span data-i18n="stats.votes"></span></div>
+      <div><strong id="statAgree">—</strong><span data-i18n="stats.agree"></span></div>
+    </div>
+    <p class="demo-banner" id="demoBanner" hidden></p>
+  </section>
+
+  <!-- ── PLAY ── -->
+  <section class="wrap section" id="play">
+    <div class="section-head">
+      <span class="mono num keep">01</span>
+      <h2 data-i18n="play.title"></h2>
+    </div>
+
+    <form class="composer" id="composer">
+      <label class="sr-only" for="prompt" data-i18n="play.label"></label>
+      <textarea id="prompt" rows="3" dir="auto" maxlength="2000" required></textarea>
+      <div class="composer-bar">
+        <label class="mono" for="category" data-i18n="play.category"></label>
+        <select id="category"></select>
+        <span class="count mono keep" id="charCount">0 / 2000</span>
+        <button class="btn primary" id="sendBtn" type="submit" data-i18n="play.send"></button>
+      </div>
+      <div class="samples" id="samples" aria-label="Sample prompts"></div>
+      <p class="notice" data-i18n="play.notice"></p>
+    </form>
+
+    <div class="battle" id="battle" hidden>
+      <p class="battle-meta mono" id="battleMeta"></p>
+      <div class="panes">
+        <article class="pane" data-side="a">
+          <header><span class="tag">A</span><span class="who" data-i18n="pane.hidden"></span><span class="timing mono keep"></span></header>
+          <div class="answer" dir="auto"></div>
+          <footer class="reveal-row"></footer>
+        </article>
+        <article class="pane" data-side="b">
+          <header><span class="tag">B</span><span class="who" data-i18n="pane.hidden"></span><span class="timing mono keep"></span></header>
+          <div class="answer" dir="auto"></div>
+          <footer class="reveal-row"></footer>
+        </article>
+      </div>
+
+      <div class="vote" id="vote" hidden>
+        <p data-i18n="vote.q"></p>
+        <div class="vote-btns">
+          <button class="btn" data-vote="a" type="button" data-i18n="vote.a"></button>
+          <button class="btn" data-vote="tie" type="button" data-i18n="vote.tie"></button>
+          <button class="btn" data-vote="b" type="button" data-i18n="vote.b"></button>
+          <button class="btn ghost" data-vote="both_bad" type="button" data-i18n="vote.bad"></button>
+        </div>
+      </div>
+
+      <div class="judge" id="judge" hidden>
+        <p class="mono" data-i18n="judge.title"></p>
+        <p id="judgeText" dir="auto"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── LEADERBOARD ── -->
+  <section class="wrap section" id="board">
+    <div class="section-head">
+      <span class="mono num keep">02</span>
+      <h2 data-i18n="board.title"></h2>
+    </div>
+    <div class="tabs" id="tabs" role="tablist"></div>
+    <div class="board-grid">
+      <div class="card">
+        <p class="mono card-title" data-i18n="board.elo"></p>
+        <div id="eloTable"></div>
+        <p class="router" id="router"></p>
+      </div>
+      <div class="card">
+        <p class="mono card-title" data-i18n="board.perf"></p>
+        <div id="perfTable"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── HOW ── -->
+  <section class="wrap section" id="how">
+    <div class="section-head">
+      <span class="mono num keep">03</span>
+      <h2 data-i18n="how.title"></h2>
+    </div>
+    <ol class="steps">
+      <li><strong data-i18n="how.s1t"></strong><span data-i18n="how.s1"></span></li>
+      <li><strong data-i18n="how.s2t"></strong><span data-i18n="how.s2"></span></li>
+      <li><strong data-i18n="how.s3t"></strong><span data-i18n="how.s3"></span></li>
+      <li><strong data-i18n="how.s4t"></strong><span data-i18n="how.s4"></span></li>
+    </ol>
+    <pre class="arch mono keep" aria-label="Architecture">browser ──POST /api/battle──▶ Cloudflare Worker ──┬─▶ HUMAIN  (ALLaM)  ─┐  SSE, both
+   ▲                                               └─▶ OpenAI  (GPT)    ─┘  streamed live
+   └──────── vote ──▶ Elo per category ──▶ D1 (SQLite) ◀── AI judge (JSON schema)</pre>
+  </section>
+</main>
+
+<footer class="foot wrap">
+  <span data-i18n="foot.by"></span>
+  <a href="https://github.com/marwathebest/arabic-llm-arena" data-i18n="foot.src"></a>
+</footer>
+
+<script src="app.js" type="module"></script>
+</body>
+</html>

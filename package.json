@@ -1,0 +1,20 @@
+{
+  "name": "arabic-llm-arena",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Blind side-by-side arena that compares HUMAIN (ALLaM) and OpenAI on Arabic prompts, with an Elo leaderboard, latency and cost metrics, and an AI judge.",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "db:migrate:local": "wrangler d1 migrations apply arena --local",
+    "db:migrate:remote": "wrangler d1 migrations apply arena --remote",
+    "deploy": "wrangler deploy",
+    "test": "node --test test/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261006.1",
+    "typescript": "^5.6.0",
+    "wrangler": "^4.0.0"
+  }
+}
